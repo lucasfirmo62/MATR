@@ -1,0 +1,22 @@
+.load-presentation{
+    padding: 50px;
+    border-radius: 20px;
+    border: solid, 2px, rgb(49, 49, 49);
+    margin-top: 30px;
+}
+
+.new-apresentation{
+    padding: 40px;
+    text-decoration: none;
+    color: aliceblue;
+}
+
+.new-apresentation:hover{
+    background-color: rgba(23, 23, 23, 0.183);
+    color: antiquewhite;
+}
+
+.title-home-load{
+    padding-top: 5px;
+    padding-bottom: 30px;
+}

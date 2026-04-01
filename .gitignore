@@ -1,0 +1,22 @@
+# Node (frontend + backend)
+node_modules/
+
+# Ambiente (SENHAS)
+.env
+
+# Uploads (opcional)
+back-end/uploads/
+
+# Build
+dist/
+build/
+
+# Logs
+*.log
+
+# Sistema (Mac)
+.DS_Store
+
+# IDE
+.vscode/
+.idea/

@@ -1,0 +1,14 @@
+.header-presentation{
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+}
+
+.title-presentation-content{
+    padding-right: 50%;
+}
+
+.output-content{
+    padding-top: 20%;
+    font-size: 40px;
+}
