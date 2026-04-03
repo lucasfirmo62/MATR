@@ -10,6 +10,7 @@ dotenv.config()
 
 const app = express()
 app.use(cors())
+app.use(express.json())
 
 const upload = multer({ dest: "uploads/" })
 
@@ -17,155 +18,85 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
 
-/**
- * 🧠 Quebra o texto em possíveis afirmações
- */
-function extrairAfirmacoes(texto) {
-  return texto
-    .split(/[.!?]| e /i)
-    .map(f => f.trim())
-    .filter(f => f.length > 15)
-}
-
-/**
- * 🧠 Remove frases irrelevantes (introdução, conversa)
- */
-function filtrarFatuais(frases) {
-  const palavrasRuins = [
-    "vou", "começar", "apresentação", "pessoal",
-    "hoje", "agora", "bom dia", "boa tarde"
-  ]
-
-  return frases.filter(f => {
-    const lower = f.toLowerCase()
-    return !palavrasRuins.some(p => lower.includes(p))
-  })
-}
-
-/**
- * 🔒 Limpa resposta do modelo
- */
-function limparResposta(resposta) {
-  if (!resposta) return ""
-
-  let texto = resposta.trim().split("\n")[0]
-
-  const invalido =
-    texto.length > 80 ||
-    /quer|posso|vou|ajudar|dica|sugest|boa|ótimo|\?/i.test(texto)
-
-  return invalido ? "" : texto
-}
-
-/**
- * 🤖 Verifica UMA afirmação
- */
-async function verificarAfirmacao(frase) {
-  const resposta = await openai.chat.completions.create({
-    model: "gpt-5-mini",
-    max_completion_tokens: 40,
-    messages: [
-      {
-        role: "system",
-        content: `
-Você recebe UMA afirmação factual.
-
-Regras:
-- Não converse
-- Não explique
-- Não sugira
-- Não escreva mais de uma frase
-
-Saída:
-- Se estiver incorreta → escreva somente a correção factual
-- Se estiver correta → responda vazio
-
-Proibido:
-- Comentários
-- Ajuda
-- Qualquer texto extra
-        `,
-      },
-      {
-        role: "user",
-        content: frase,
-      },
-    ],
-  })
-
-  return limparResposta(resposta.choices[0].message.content)
-}
-
-/**
- * 🧹 Limpeza de arquivos
- */
-function cleanup(audioPath, outputPath) {
-  if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath)
-  if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath)
+const limparArquivos = (p1, p2) => {
+  if (p1 && fs.existsSync(p1)) fs.unlinkSync(p1)
+  if (p2 && fs.existsSync(p2)) fs.unlinkSync(p2)
 }
 
 app.post("/audio", upload.single("audio"), async (req, res) => {
+  let caminhoOriginal = ""
+  let caminhoWav = ""
+
   try {
-    console.log("🎤 Áudio recebido")
+    if (!req.file) return res.json({ correcoes: "" })
 
-    const audioPath = req.file.path
-    const outputPath = audioPath + ".wav"
+    caminhoOriginal = req.file.path
+    caminhoWav = `${caminhoOriginal}.wav`
 
-    // 🔁 Converter para WAV
     await new Promise((resolve, reject) => {
-      ffmpeg(audioPath)
-        .toFormat("wav")
-        .on("end", resolve)
-        .on("error", reject)
-        .save(outputPath)
+      ffmpeg(caminhoOriginal).toFormat("wav").on("end", resolve).on("error", reject).save(caminhoWav)
     })
 
-    // 🧠 TRANSCRIÇÃO
-    const transcription = await openai.audio.transcriptions.create({
-      file: fs.createReadStream(outputPath),
-      model: "gpt-4o-mini-transcribe",
+    const transcricao = await openai.audio.transcriptions.create({
+      file: fs.createReadStream(caminhoWav),
+      model: "whisper-1",
+      language: "pt", 
     })
 
-    const texto = transcription.text?.trim()
+    const textoBase = transcricao.text.trim()
 
-    console.log("📝 Texto completo:", texto)
-
-    // ⚠️ Ignorar vazio
-    if (!texto || texto.length < 10) {
-      cleanup(audioPath, outputPath)
-      return res.json({ texto: "", correcoes: "" })
+    if (!textoBase || textoBase.length < 3) {
+      limparArquivos(caminhoOriginal, caminhoWav)
+      return res.json({ correcoes: "" })
     }
 
-    // 🧠 Pipeline de processamento
-    const afirmacoes = extrairAfirmacoes(texto)
-    const fatuais = filtrarFatuais(afirmacoes)
+    const contextoAdicional = req.body.contexto ? `Contexto da apresentação: ${req.body.contexto}` : "";
 
-    console.log("🎯 Afirmações detectadas:", fatuais)
+    const analise = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      max_tokens: 60,
+      temperature: 0, 
+      messages: [
+        {
+          role: "system",
+          content: `Você é um verificador de fatos ultra-rápido para transcrições de voz.
+          ${contextoAdicional}
+          REGRAS:
+          - O texto vem de fala natural (pode haver gagueira ou falta de pontuação), foque APENAS no fato.
+          - Se houver erro factual: Dê apenas a correção direta (máx 15 palavras).
+          - Se o fato estiver certo ou não houver fato claro: Retorne uma string VAZIA.
+          - IGNORE erros de gramática ou repetições.
+          - PROIBIDO: "Não há erros", "No errors", "Correto", "Nenhum erro encontrado", "Erro:", "Correção:", "Faltou informação", "Vazio", "Vazia", "Fale de novo".
+          - Se não entendeu, fique em silêncio.
+          - Se não houver fato relevante, fique em silêncio.`
+        },
+        { role: "user", content: textoBase }
+      ]
+    })
 
-    let correcoes = []
+    let respostaIA = analise.choices[0].message.content.trim()
 
-    for (const frase of fatuais) {
-      const correcao = await verificarAfirmacao(frase)
-
-      if (correcao) {
-        correcoes.push(correcao)
-      }
+    const frasesBanidas = ["no errors", "não há erros", "nenhum erro", "correto", "está certo", "found", "informação", "vazio"];
+    if (frasesBanidas.some(f => respostaIA.toLowerCase().includes(f))) {
+      respostaIA = "";
     }
 
-    // 🧹 Limpeza
-    cleanup(audioPath, outputPath)
+    const respostaLimpa = respostaIA.replace(/[.\s]/g, '').toLowerCase();
+    if (respostaLimpa === "vazia" || respostaIA.length < 2) {
+      respostaIA = "";
+    }
 
-    res.json({
-      texto,
-      correcoes: correcoes.join("\n"),
+    limparArquivos(caminhoOriginal, caminhoWav)
+
+    return res.json({
+      textoOriginal: textoBase,
+      correcoes: respostaIA
     })
 
   } catch (error) {
-    console.error("❌ ERRO:", error)
-    res.status(500).json({ error: "Erro no processamento" })
+    limparArquivos(caminhoOriginal, caminhoWav)
+    return res.json({ correcoes: "" })
   }
 })
 
-app.listen(3001, () => {
-  console.log("🔥 Backend rodando em http://localhost:3001")
-})
+app.listen(3001, () => console.log("🔥 Backend rodando em http://localhost:3001"))
