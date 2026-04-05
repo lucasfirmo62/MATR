@@ -1,16 +1,15 @@
 import React, { useState } from "react"
 import "./styles.css";
 import { Link } from "react-router-dom"
-import TrainingMode from "../Training"; 
+import TrainingMode from "../Training";
 
 function NewPresentation() {
   const [abrirTreino, setAbrirTreino] = useState(false)
-  
+
   const [titulo, setTitulo] = useState("")
   const [sobre, setSobre] = useState("")
   const [modoTreinoAtivo, setModoTreinoAtivo] = useState(false)
 
-  // Se o modo treino estiver ativo, renderiza o componente de treino passando os dados
   if (modoTreinoAtivo) {
     return <TrainingMode titulo={titulo} contexto={sobre} />
   }
@@ -19,17 +18,32 @@ function NewPresentation() {
     <>
       <header>MATR</header>
 
-      <div className="content"> 
-        
-        <div className="new-apresentation"
+      {/* Ajustado o estilo do container para empilhar os botões */}
+      <div className="content-new-apresentation" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", marginTop: "50px" }}>
+
+        <button
+          className="button"
           onClick={() => setAbrirTreino(!abrirTreino)}
-          style={{ cursor: "pointer" }}
+          style={{
+            cursor: "pointer",
+            display: "inline-block",
+            padding: "10px",
+            fontFamily: "Arial, Helvetica, sans-serif",
+            backgroundColor: "#212123",
+            width: "410px",
+            border: "1px solid transparent",
+            fontSize: "17px",
+            color: "white",
+            textDecoration: "none",
+            textAlign: "center",
+            boxSizing: "border-box"
+          }}
         >
           Treinar apresentação
-        </div>
+        </button>
 
         {abrirTreino && (
-          <div className="treino-box">
+          <div className="treino-box" style={{ width: "410px" }}>
             <h2>Treinar apresentação</h2>
 
             <div className="content-inside">
@@ -39,24 +53,24 @@ function NewPresentation() {
                 placeholder="Meu título..."
                 className="title-training-input"
                 value={titulo}
-                onChange={(e) => setTitulo(e.target.value)} 
+                onChange={(e) => setTitulo(e.target.value)}
               />
             </div>
 
             <div className="content-inside">
-              <h3>Descreva um pouco sobre a apresentação</h3>
+              <h3>Objetivo da apresentação</h3>
               <textarea
                 placeholder="Minha apresentação é sobre..."
                 className="about-training-input"
                 value={sobre}
-                onChange={(e) => setSobre(e.target.value)} 
+                onChange={(e) => setSobre(e.target.value)}
               />
             </div>
 
-            <div 
-              className="content-inside" 
+            <div
+              className="content-inside"
               onClick={() => {
-                if(titulo.trim() !== "") {
+                if (titulo.trim() !== "") {
                   setModoTreinoAtivo(true);
                 } else {
                   alert("Por favor, insira um título.");
@@ -64,13 +78,32 @@ function NewPresentation() {
               }}
               style={{ cursor: "pointer" }}
             >
-              <div className="button">Iniciar treino</div>
+              <button>Iniciar treino</button>
             </div>
           </div>
         )}
 
-        <Link className="new-apresentation" to="/presentation" style={{ textDecoration: "none" }}>
-          Apresentar agora
+        <Link className="button" to="/presentation"
+          style={{
+            display: "inline-block",
+            padding: "10px",
+            fontFamily: "Arial, Helvetica, sans-serif",
+            backgroundColor: "#212123",
+            width: "410px",
+            border: "1px solid transparent",
+            fontSize: "17px",
+            cursor: "pointer",
+            color: "white",
+            textDecoration: "none",
+            textAlign: "center",
+            boxSizing: "border-box"
+          }}
+        >
+
+          <button>Apresentar agora</button>
+          <div>
+            <a className="about-live-now">Sem treino, não haverá salvamento de feedback, nem restringirá sua apresentação a um objetivo.</a>
+          </div>
         </Link>
       </div>
 

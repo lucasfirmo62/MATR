@@ -1,24 +1,25 @@
 import { useState } from "react"
 import "./styles.css"
+import { Link } from "react-router-dom"
 
-function OneApresentation({ nome, sobre }) {
+function OneApresentation({ nome, sobre, linkTreino }) {
   const [abrirTreino, setAbrirTreino] = useState(false)
 
   return (
-    <div
+    <div 
+      className="contnet-one-apresentation"
       onClick={() => setAbrirTreino(!abrirTreino)}
-      style={{ cursor: "pointer" }}
     >
-      {/* Sempre aparece */}
-      <h3>{nome}</h3>
-
-      {/* Abre ao clicar */}
-      {abrirTreino && (
         <div className="treino-box">
+          <h3>{nome}</h3>
           <p>{sobre}</p>
-          <button>Continuar apresentação</button>
+          <Link 
+                  to={`/treino/${linkTreino}`} 
+                  className="button" 
+                >
+                  <button>Ver detalhes desta apresentação</button>
+                </Link>
         </div>
-      )}
     </div>
   )
 }

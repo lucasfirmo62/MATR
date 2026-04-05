@@ -17,6 +17,24 @@ function TrainingMode({ titulo = "Apresentação sem Título", contexto = "" }) 
     return `${minutos.toString().padStart(2, '0')}:${segundos.toString().padStart(2, '0')}`
   }
 
+  const salvarNoBanco = async (dadosCompletos) => {
+    try {
+      const response = await fetch("http://localhost:3001/salvar-treino", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dadosCompletos)
+      });
+      
+      if (response.ok) {
+        console.log("✅ Treino salvo no MongoDB Atlas!");
+      } else {
+        console.error("❌ Erro ao salvar treino.");
+      }
+    } catch (err) {
+      console.error("❌ Erro de conexão com o servidor:", err);
+    }
+  }
+
   const startRecording = async () => {
     setErrosDetectados([])
     setTempo(0)
@@ -42,6 +60,16 @@ function TrainingMode({ titulo = "Apresentação sem Título", contexto = "" }) 
     if (mediaRecorderRef.current?.state === "recording") {
       mediaRecorderRef.current.stop()
     }
+
+    const dadosParaSalvar = {
+      titulo: titulo,
+      contexto: contexto,
+      tempoTotal: tempo,
+      erros: errosDetectados, 
+      feedbackGeral: gerarFeedback()
+    };
+
+    salvarNoBanco(dadosParaSalvar);
   }
 
   const recordOnce = async () => {
@@ -61,8 +89,6 @@ function TrainingMode({ titulo = "Apresentação sem Título", contexto = "" }) 
           const blob = new Blob(chunks, { type: "audio/webm" })
           const formData = new FormData()
           formData.append("audio", blob, "audio.webm")
-          
-          // ENVIANDO O CONTEXTO PARA O BACKEND
           formData.append("contexto", contexto) 
 
           try {
@@ -72,9 +98,14 @@ function TrainingMode({ titulo = "Apresentação sem Título", contexto = "" }) 
             })
             const data = await res.json()
 
-            if (data.correcoes && data.correcoes.trim() !== "") {
+            // Filtro para não exibir a palavra "VAZIA" na tela
+            if (data.correcoes && data.correcoes.trim() !== "" && data.correcoes.toLowerCase() !== "vazia") {
               setErrosDetectados((prev) => [
-                { id: Date.now(), ouvi: data.textoOriginal, correcao: data.correcoes },
+                { 
+                  id: Date.now(), 
+                  ouvi: data.textoOriginal, 
+                  correcao: data.correcoes 
+                },
                 ...prev
               ])
             }
@@ -100,30 +131,21 @@ function TrainingMode({ titulo = "Apresentação sem Título", contexto = "" }) 
 
   return (
     <div style={{ padding: "40px", fontFamily: "sans-serif", maxWidth: "800px", margin: "0 auto" }}>
-      
-      {/* EXIBIÇÃO DO TÍTULO RECEBIDO */}
       <h1 style={{ textAlign: "center", fontSize: "1.2rem", color: "#666", marginBottom: "20px", textTransform: "uppercase", letterSpacing: "1px" }}>
         Treinando: {titulo}
       </h1>
 
       {!treinoFinalizado ? (
         <>
-          <div className="header-presentation">
+          <div className="header-presentation" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f4f4f4", padding: "15px", borderRadius: "8px" }}>
             <div className="title-presentation-content">
                Modo Treino 
-               <span style={{ color: estaGravando ? "#00ff00" : "#ccc", marginLeft: "10px" }}>
+               <span style={{ color: estaGravando ? "#00aa00" : "#ccc", marginLeft: "10px", fontWeight: "bold" }}>
                  {estaGravando ? "● Gravando" : "PRONTO"}
                </span>
             </div>
-            <p style={{ fontSize: "1.5rem", fontWeight: "bold" }}>{formatarTempo(tempo)}</p>
+            <p style={{ fontSize: "1.5rem", fontWeight: "bold", margin: 0 }}>{formatarTempo(tempo)}</p>
           </div>
-
-          {/* DICA DE CONTEXTO (OPCIONAL) */}
-          {contexto && estaGravando && (
-            <p style={{ fontSize: "12px", color: "#999", fontStyle: "italic" }}>
-              Focando em: {contexto.substring(0, 50)}...
-            </p>
-          )}
 
           <section style={{ marginTop: "30px" }}>
             {errosDetectados.length === 0 ? (
@@ -133,8 +155,8 @@ function TrainingMode({ titulo = "Apresentação sem Título", contexto = "" }) 
             ) : (
                 errosDetectados.map((erro) => (
                 <div key={erro.id} style={{ background: "#fff5f5", borderLeft: "5px solid #ff4d4d", padding: "15px", marginBottom: "10px", borderRadius: "4px" }}>
-                    <p style={{ margin: "0", fontSize: "12px", color: "#666" }}>Correção instantânea:</p>
-                    <p style={{ margin: "5px 0 0 0", fontWeight: "bold" }}>⚠️ {erro.correcao}</p>
+                    <p style={{ margin: "0", fontSize: "11px", color: "#999", textTransform: "uppercase" }}>IA Detectou:</p>
+                    <p style={{ margin: "5px 0 0 0", fontWeight: "bold", color: "#cc0000" }}>⚠️ {erro.correcao}</p>
                 </div>
                 ))
             )}
@@ -142,35 +164,30 @@ function TrainingMode({ titulo = "Apresentação sem Título", contexto = "" }) 
 
           <footer style={{ marginTop: "40px", textAlign: "center" }}>
             {!estaGravando ? (
-              <button onClick={startRecording} className="button">Iniciar Treino</button>
+              <button onClick={startRecording} className="button" style={{ padding: "12px 30px", fontSize: "1rem", cursor: "pointer" }}>Iniciar Treino</button>
             ) : (
-              <button onClick={stopRecording} className="button" style={{ backgroundColor: "#ff4d4d" }}>Finalizar e Ver Relatório</button>
+              <button onClick={stopRecording} className="button" style={{ backgroundColor: "#ff4d4d", color: "white", padding: "12px 30px", fontSize: "1rem", cursor: "pointer", border: "none", borderRadius: "5px" }}>Finalizar e Ver Relatório</button>
             )}
           </footer>
         </>
       ) : (
         <div style={{ animation: "fadeIn 0.5s" }}>
-          <h2 style={{ textAlign: "center", color: "#333" }}>Relatório: {titulo}</h2>
-          
+          <h2 style={{ textAlign: "center", color: "#333" }}>Relatório Final</h2>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", margin: "30px 0" }}>
             <div style={{ background: "#f8f9fa", padding: "20px", borderRadius: "10px", textAlign: "center" }}>
-              <p style={{ color: "#666", margin: "0" }}>Tempo Total</p>
+              <p style={{ color: "#666", margin: "0" }}>Duração</p>
               <h3 style={{ fontSize: "2rem", margin: "10px 0" }}>{formatarTempo(tempo)}</h3>
             </div>
             <div style={{ background: "#f8f9fa", padding: "20px", borderRadius: "10px", textAlign: "center" }}>
-              <p style={{ color: "#666", margin: "0" }}>Erros Detectados</p>
+              <p style={{ color: "#666", margin: "0" }}>Erros</p>
               <h3 style={{ fontSize: "2rem", margin: "10px 0", color: "#ff4d4d" }}>{errosDetectados.length}</h3>
             </div>
           </div>
-
           <div style={{ background: "#e7f3ff", padding: "20px", borderRadius: "10px", marginBottom: "30px" }}>
-            <h4 style={{ margin: "0 0 10px 0", color: "#0056b3" }}>🎯 Feedback Geral</h4>
-            <p style={{ margin: 0, fontSize: "1.1rem" }}>{gerarFeedback()}</p>
+            <h4 style={{ margin: "0 0 5px 0", color: "#0056b3" }}>🎯 Feedback</h4>
+            <p style={{ margin: 0 }}>{gerarFeedback()}</p>
           </div>
-
-          <button onClick={() => setTreinoFinalizado(false)} className="button" style={{ marginTop: "30px", width: "100%" }}>
-            Tentar Novamente
-          </button>
+          <button onClick={() => setTreinoFinalizado(false)} className="button" style={{ width: "100%", padding: "15px" }}>Voltar</button>
         </div>
       )}
     </div>

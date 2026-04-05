@@ -6,11 +6,15 @@ import fs from "fs"
 import OpenAI from "openai"
 import ffmpeg from "fluent-ffmpeg"
 
+import connectDB, { Treino } from "./database.js"
+
 dotenv.config()
 
 const app = express()
 app.use(cors())
 app.use(express.json())
+
+connectDB()
 
 const upload = multer({ dest: "uploads/" })
 
@@ -22,6 +26,42 @@ const limparArquivos = (p1, p2) => {
   if (p1 && fs.existsSync(p1)) fs.unlinkSync(p1)
   if (p2 && fs.existsSync(p2)) fs.unlinkSync(p2)
 }
+
+app.get("/treinos", async (req, res) => {
+  try {
+    // Busca todos os documentos na coleção 'treinos' e ordena pelos mais recentes
+    const treinos = await Treino.find().sort({ data: -1 });
+    res.json(treinos);
+  } catch (error) {
+    console.error("Erro ao buscar treinos:", error);
+    res.status(500).json({ erro: "Erro ao buscar treinos no banco de dados" });
+  }
+});
+
+// --- NOVA ROTA ADICIONADA: BUSCAR TREINO ESPECÍFICO POR ID ---
+app.get("/treinos/:id", async (req, res) => {
+  try {
+    const treino = await Treino.findById(req.params.id);
+    if (!treino) {
+      return res.status(404).json({ erro: "Treino não encontrado" });
+    }
+    res.json(treino);
+  } catch (error) {
+    console.error("Erro ao buscar treino por ID:", error);
+    res.status(500).json({ erro: "ID inválido ou erro no servidor" });
+  }
+});
+
+app.post("/salvar-treino", async (req, res) => {
+  try {
+    const novoTreino = new Treino(req.body)
+    await novoTreino.save()
+    res.status(201).json({ mensagem: "Treino salvo com sucesso!" })
+  } catch (error) {
+    console.error("Erro ao salvar treino:", error)
+    res.status(500).json({ erro: "Erro ao salvar no banco de dados" })
+  }
+})
 
 app.post("/audio", upload.single("audio"), async (req, res) => {
   let caminhoOriginal = ""
