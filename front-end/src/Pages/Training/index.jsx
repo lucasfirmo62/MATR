@@ -28,10 +28,10 @@ function TrainingMode({ titulo = "Apresentação sem Título", contexto = "" }) 
       if (response.ok) {
         console.log("✅ Treino salvo no MongoDB Atlas!");
       } else {
-        console.error("❌ Erro ao salvar treino.");
+        console.error("Erro ao salvar treino.");
       }
     } catch (err) {
-      console.error("❌ Erro de conexão com o servidor:", err);
+      console.error("Erro de conexão com o servidor:", err);
     }
   }
 

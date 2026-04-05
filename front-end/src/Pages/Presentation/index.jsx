@@ -7,9 +7,8 @@ function Presentation() {
   const [tempo, setTempo] = useState(0) // Estado para o cronômetro
   const isRecording = useRef(false)
   const mediaRecorderRef = useRef(null)
-  const timerRef = useRef(null) // Referência para o intervalo do cronômetro
+  const timerRef = useRef(null)
 
-  // Função para formatar segundos em MM:SS
   const formatarTempo = (totalSegundos) => {
     const minutos = Math.floor(totalSegundos / 60)
     const segundos = totalSegundos % 60
@@ -35,7 +34,6 @@ function Presentation() {
     isRecording.current = false
     setEstaGravando(false)
     
-    // Para o cronômetro
     if (timerRef.current) {
       clearInterval(timerRef.current)
     }
@@ -102,7 +100,6 @@ function Presentation() {
     }
   }
 
-  // Limpeza ao desmontar o componente
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current)

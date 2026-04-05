@@ -139,4 +139,4 @@ app.post("/audio", upload.single("audio"), async (req, res) => {
   }
 })
 
-app.listen(3001, () => console.log("🔥 Backend rodando em http://localhost:3001"))
+app.listen(3001, () => console.log("Backend run in http://localhost:3001"))

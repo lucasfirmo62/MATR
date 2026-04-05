@@ -17,8 +17,6 @@ function NewPresentation() {
   return (
     <>
       <header>MATR</header>
-
-      {/* Ajustado o estilo do container para empilhar os botões */}
       <div className="content-new-apresentation" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", marginTop: "50px" }}>
 
         <button

@@ -4,7 +4,7 @@ import "./styles.css"
 
 function TreinoDetalhes() {
   const { id } = useParams()
-  const navigate = useNavigate() // Para podermos navegar de volta ao treino
+  const navigate = useNavigate()
   const [treino, setTreino] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -27,9 +27,7 @@ function TreinoDetalhes() {
       })
   }, [id])
 
-  // FUNÇÃO PARA VOLTAR AO MODO TREINO COM OS MESMOS DADOS
   const continuarTreino = () => {
-    // Navega para a página de treino passando os dados originais via state
     navigate("/training", { 
       state: { 
         titulo: treino.titulo, 
@@ -64,7 +62,6 @@ function TreinoDetalhes() {
           </div>
         </div>
 
-        {/* ÁREA DE ESTUDO: NOVAS IDEIAS E CORREÇÕES */}
         <div style={{ background: "#fffbe6", padding: "20px", borderRadius: "10px", border: "1px solid #ffe58f", marginBottom: "30px" }}>
           <h4 style={{ margin: "0 0 15px 0", color: "#856404", display: "flex", alignItems: "center" }}>
             💡 Ideias e Correções para Estudar:
@@ -83,7 +80,6 @@ function TreinoDetalhes() {
           )}
         </div>
 
-        {/* AÇÕES */}
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           <button 
             onClick={continuarTreino} 

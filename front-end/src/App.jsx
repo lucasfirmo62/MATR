@@ -13,7 +13,6 @@ function App() {
         <Route path="/new-presentation" element={<NewPresentation />} />
         <Route path="/presentation" element={<Presentation />} />
         <Route path="/training" element={<TrainingMode />} />
-        {/* NOVA ROTA DINÂMICA */}
         <Route path="/treino/:id" element={<TrainingContinue />} />
       </Routes>
     </BrowserRouter>
